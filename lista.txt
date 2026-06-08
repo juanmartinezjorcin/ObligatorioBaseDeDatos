@@ -1,0 +1,21 @@
+registro de usuario
+inicio de secion
+edicion de usuario
+dar de alta eventos
+modificacion de evento
+asignacion de dispocitivo
+asignacion de funcionario a evento 
+generar entrada
+generar qr
+vlidacion de qr
+compra entrada
+selecionar entadas
+transferencia entrada
+ver entrada
+aceptar transferencia
+revisar venta
+dar de alta equipos 
+dar de alta estadios
+editar equipos
+editar estadios
+actualisar comicion
