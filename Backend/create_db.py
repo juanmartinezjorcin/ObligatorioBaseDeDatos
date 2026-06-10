@@ -1,0 +1,11 @@
+from app import models
+from app.database import engine
+
+
+def create():
+    models.Base.metadata.create_all(bind=engine)
+
+
+if __name__ == '__main__':
+    create()
+    print("Database tables created")
