@@ -1,21 +1,46 @@
-registro de usuario
-inicio de secion
-edicion de usuario
-dar de alta eventos
-modificacion de evento
-asignacion de dispocitivo
-asignacion de funcionario a evento 
-generar entrada
-generar qr
-vlidacion de qr
-compra entrada
-selecionar entadas
-transferencia entrada
-ver entrada
-aceptar transferencia
-revisar venta
-dar de alta equipos 
-dar de alta estadios
-editar equipos
-editar estadios
-actualisar comicion
+registro_de_usuario(tipo_documento, numero_documento, pais_documento, direccion_pais, direccion_localidad, direccion_calle, direccion_numero, direccion_codigo_postal, telefono) Devuelve: id_usuario, Escribe en: usuario, general, usuario_telefono
+Registro en firevace email, contraseña, y cin el uid lo uso como id_usuario, y con lo demas atrivutos a la tabla, predeterminado general
+
+inicio_de_sesion(email, contraseña) Devuelve: token, UID, id_usuario, Escribe en: Ninguna (solo lectura/verificación)
+en firebase y uso el tocken para ver si esta listo o tiene permisos antes de la accion
+
+edicion_de_usuario(id_usuario, tipo_documento, numero_documento, pais_documento, direccion_pais, direccion_localidad, direccion_calle, direccion_numero, direccion_codigo_postal) Devuelve: booleano, Escribe en: usuario
+uso playholder ya cargados con la informacion modificable de ese usuario y guardo la que modifico.
+
+dar_de_alta_eventos(id_administrador, fecha_y_hora, id_estadio, id_equipo_1, id_equipo_2, sectores[]) Devuelve: id_evento, Escribe en: eventos, participan, utilizan
+valido mismo pais, y fecha por disponivilidad estadio, y despues Escribe
+
+modificacion_de_evento(id_evento, fecha_y_hora, id_estadio) Devuelve: booleano, Escribe en: eventos
+uso playholder ya cargados con la informacion modificable de ese usuario y guardo la que modifico.
+
+asignacion_de_dispositivo(id_dispositivo, id_funcionario) Devuelve: booleano, Escribe en: dispositivo
+cuenta funcionario se hasocia con un dispocitivo vacante.
+
+asignacion_de_funcionario_a_evento(id_funcionario, id_evento) Devuelve: booleano, Escribe en: valida
+
+
+seleccionar_entradas(id_evento, nombre_sector, cantidad) Devuelve: disponibilidad (booleano), precio_unitario, Escribe en: Ninguna (solo lectura)
+
+compra_entrada(id_comprador, id_evento, id_estadio, nombre_sector, monto_total) Devuelve: id_venta, id_entrada, Escribe en: venta, entrada, estado, venta_estado
+
+generar_entrada(id_entrada) Devuelve: datos_entrada, Escribe en: Ninguna (solo lectura)
+
+generar_qr(id_entrada) Devuelve: codigo_qr_string, Escribe en: qr
+
+validacion_de_qr(codigo_qr_string, id_funcionario, id_dispositivo) Devuelve: resultado_validacion (booleano), Escribe en: qr, valida
+
+transferencia_entrada(id_ofertante, email_destinatario, id_entrada) Devuelve: id_transferencia, Escribe en: transferencia, estado
+
+aceptar_transferencia(id_transferencia) Devuelve: booleano, Escribe en: transferencia, entrada, qr
+
+ver_entrada(id_usuario) Devuelve: lista_entradas (id_entrada, fecha_y_hora, estadio, sector, qr_activo), Escribe en: Ninguna (solo lectura)
+
+revisar_venta(id_venta) Devuelve: monto_total, comision, fecha, estado_actual, Escribe en: Ninguna (solo lectura)
+
+dar_de_alta_equipos(nombre) Devuelve: id_equipo, Escribe en: equipos
+
+editar_equipos(id_equipo, nombre) Devuelve: booleano, Escribe en: equipos
+
+dar_de_alta_estadios(pais, sectores[]) Devuelve: id_estadio, Escribe en: estadio, sector
+
+editar_estadios(id_estadio, pais) Devuelve: booleano, Escribe en: estadio
