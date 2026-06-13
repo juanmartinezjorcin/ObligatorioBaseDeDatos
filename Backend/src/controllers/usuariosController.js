@@ -70,7 +70,7 @@ try {
 }
 };
 
-//GET USUARIOS
+//GET USUARIOS/perfil para ver los datos de tu usuario. (tambien usado para el login).
 
 const obtenerPerfil = async (req, res) => {
     const id_usuario = req.user.id_usuario;

@@ -14,7 +14,7 @@ module.exports = async (req, res, next) => {
     const token = header.split('Bearer ')[1];
     try {
         const decoded = await admin.auth().verifyIdToken(token);
-        const [rows] = await pool.query('SELECT * FROM users WHERE firebase_uid = ?', [decoded.uid]);
+        const [rows] = await pool.query('SELECT * FROM users WHERE id_usuario = ?', [decoded.uid]);
         if (!rows.length) return res.status(403).json({ error: 'Usuario no registrado' });
         
         req.user = rows[0];
