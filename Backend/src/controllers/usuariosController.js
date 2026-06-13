@@ -3,7 +3,7 @@ const pool = require('../config/db');
 
 const registrarUsuario = async (req, res) => {
     const {
-        firebase_uid,
+        id_usuario,
         mail,
         tipo_documento,
         numero_documento,
@@ -16,7 +16,7 @@ const registrarUsuario = async (req, res) => {
         telefonos,
     } = req.body;
 
- if (!firebase_uid || !mail || !tipo_documento || !numero_documento || !pais_documento) {
+ if (!id_usuario || !mail || !tipo_documento || !numero_documento || !pais_documento) {
     return res.status(400).json({ error: 'Faltan campos obligatorios' });
   }
 
@@ -28,23 +28,22 @@ try {
     //insercion del usuario
      const [result] = await conn.query(
       `INSERT INTO usuario 
-        (firebase_uid, mail, tipo_documento, numero_documento, pais_documento,
+        (id_usuario, mail, tipo_documento, numero_documento, pais_documento,
         direccion_pais, direccion_localidad, direccion_calle, direccion_numero,
         direccion_codigo_postal)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        firebase_uid, mail, tipo_documento, numero_documento, pais_documento,
+        id_usuario, mail, tipo_documento, numero_documento, pais_documento,
         direccion_pais, direccion_localidad, direccion_calle, direccion_numero,
         direccion_codigo_postal
       ]
     );
-    const id_usuario = result.insertId;
 
 //insercion en usuario general
 
  await conn.query(
-      `INSERT INTO general (id_usuario, fecha_registro, estado_verificacion)
-       VALUES (?, CURDATE(), 0)`,
+      `INSERT INTO general (id_usuario, fecha_registro)
+       VALUES (?, CURDATE())`,
       [id_usuario]
     );
 
@@ -52,7 +51,7 @@ try {
         for (const telefono of telefonos) {
             await conn.query(
                   `INSERT INTO usuario_telefono (id_usuario, telefono) VALUES (?, ?)`,
-                    [id_usuario, tel]
+                    [id_usuario, telefono]
                 );
             }
     }
