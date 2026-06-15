@@ -1,10 +1,10 @@
-
 const pool = require('../config/db');
+const { getAuth } = require('../config/firebase');
 
 const registrarUsuario = async (req, res) => {
     const {
-        id_usuario,
         mail,
+        password,
         tipo_documento,
         numero_documento,
         pais_documento,
@@ -16,61 +16,91 @@ const registrarUsuario = async (req, res) => {
         telefonos,
     } = req.body;
 
- if (!id_usuario || !mail || !tipo_documento || !numero_documento || !pais_documento) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
-  }
+    if (!mail || !password || !tipo_documento || !numero_documento || !pais_documento) {
+        return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    }
 
-const conn = await pool.getConnection();
+    const auth = getAuth();
+    let firebaseUser;
 
-try {
-    await conn.beginTransaction();
+    try {
+        firebaseUser = await auth.createUser({
+            email: mail,
+            password: password,
+        });
+    } catch (firebaseError) {
+        console.error('Error en Firebase Auth:', firebaseError);
+        if (firebaseError.code === 'auth/email-already-exists') {
+            return res.status(409).json({ error: 'El correo electrónico ya está registrado' });
+        }
+        if (firebaseError.code === 'auth/invalid-password') {
+            return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+        }
+        return res.status(500).json({ error: 'Error al registrar en el servicio de autenticación' });
+    }
 
-    //insercion del usuario
-     const [result] = await conn.query(
-      `INSERT INTO usuario 
-        (id_usuario, mail, tipo_documento, numero_documento, pais_documento,
-        direccion_pais, direccion_localidad, direccion_calle, direccion_numero,
-        direccion_codigo_postal)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id_usuario, mail, tipo_documento, numero_documento, pais_documento,
-        direccion_pais, direccion_localidad, direccion_calle, direccion_numero,
-        direccion_codigo_postal
-      ]
-    );
+    const id_usuario = firebaseUser.uid;
+    let conn;
 
-//insercion en usuario general
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
 
- await conn.query(
-      `INSERT INTO general (id_usuario, fecha_registro)
-       VALUES (?, CURDATE())`,
-      [id_usuario]
-    );
+        await conn.query(
+            `INSERT INTO usuario 
+                (id_usuario, mail, tipo_documento, numero_documento, pais_documento,
+                direccion_pais, direccion_localidad, direccion_calle, direccion_numero,
+                direccion_codigo_postal)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                id_usuario, mail, tipo_documento, numero_documento, pais_documento,
+                direccion_pais, direccion_localidad, direccion_calle, direccion_numero,
+                direccion_codigo_postal
+            ]
+        );
 
-    if (telefonos && telefonos.length > 0) {
-        for (const telefono of telefonos) {
-            await conn.query(
-                  `INSERT INTO usuario_telefono (id_usuario, telefono) VALUES (?, ?)`,
+        await conn.query(
+            `INSERT INTO general (id_usuario, fecha_registro)
+             VALUES (?, CURDATE())`,
+            [id_usuario]
+        );
+
+        if (telefonos && telefonos.length > 0) {
+            for (const telefono of telefonos) {
+                await conn.query(
+                    `INSERT INTO usuario_telefono (id_usuario, telefono) VALUES (?, ?)`,
                     [id_usuario, telefono]
                 );
             }
-    }
+        }
 
-    await conn.commit();
-    res.status(201).json({ message: 'Usuario registrado correctamente' });
-} catch (e) {
-    await conn.rollback();
-    if (e.code === 'ER_DUP_ENTRY') {
-        res.status(409).json({ error: 'El usuario ya existe' });
+        await conn.commit();
+        res.status(201).json({ message: 'Usuario registrado correctamente', id_usuario });
+
+    } catch (dbError) {
+            if (conn) {
+            await conn.rollback();
+        }
+        console.error('Error en base de datos. Revirtiendo Firebase Auth...', dbError);
+
+        try {
+            // decidimos eliminamar el usuario creado en Firebase para evitar inconsistencias
+            await auth.deleteUser(id_usuario);
+            console.log('Usuario de Firebase eliminado con éxito tras fallo en Base de Datos');
+        } catch (cleanupError) {
+            console.error('Error crítico: No se pudo limpiar el usuario en Firebase:', cleanupError);
+        }
+
+        if (dbError.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: 'El documento o datos ya están registrados en el sistema' });
+        }
+        res.status(500).json({ error: 'Error interno al guardar los datos del perfil' });
+    } finally {
+        if (conn) {
+            conn.release();
+        }
     }
-    console.error(e);
-    res.status(500).json({ error: 'Error interno del servidor :(' });
-} finally {
-    conn.release();
-}
 };
-
-//GET USUARIOS/perfil para ver los datos de tu usuario. (tambien usado para el login).
 
 const obtenerPerfil = async (req, res) => {
     const id_usuario = req.user.id_usuario;
