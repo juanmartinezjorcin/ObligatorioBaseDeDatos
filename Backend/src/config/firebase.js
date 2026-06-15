@@ -1,12 +1,12 @@
 //inicilizacion de firebase admin (cuando el frontend mande token, este archivo da las herramientas para 
 // confirmar que ese token es legitimo y no es falsificado
 
-const admin = require('firebase-admin');
+const { initializeApp, cert } = require('firebase-admin/app');
+const { getAuth } = require('firebase-admin/auth');
+const serviceAccount = require('../../firebase-service-account.json');
 
-if (!admin.apps || !admin.apps.length) {
-  admin.initializeApp({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-  });
-}
+initializeApp({
+  credential: cert(serviceAccount)
+});
 
-module.exports = admin;
+module.exports = { getAuth };
