@@ -1,6 +1,6 @@
 const router = require ('express').Router();
 const auth = require('../middleware/auth');
-const { listarEventos, obtenerSectoresEvento, registrarEventos } = require('../controllers/eventosController');
+const { listarEventos, obtenerSectoresEvento, registrarEventos, HabilitarSectoresEvento } = require('../controllers/eventosController');
 
 //listar
 router.get('/', listarEventos);
@@ -9,5 +9,8 @@ router.get('/', listarEventos);
 router.get('/:id/sectores', obtenerSectoresEvento);
 
 router.post('/registro', registrarEventos);
+
+router.post('/habilitar-sectores', HabilitarSectoresEvento);
+
 
 module.exports = router;

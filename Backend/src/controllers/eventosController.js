@@ -27,6 +27,37 @@ const registrarEventos = async (req, res) => {
         });
     }
 
+// AUTENTICACIÓN FIREBASE (DESCOMENTAR CUANDO LA USES)
+
+    // const authHeader = req.headers.authorization;
+
+    // if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    //     return res.status(401).json({
+    //         error: 'Token requerido'
+    //     });
+    // }
+
+    // const token = authHeader.split(' ')[1];
+
+    // const decodedToken = await admin.auth().verifyIdToken(token);
+
+    // Verificar permisos de administrador
+
+    // const [usuarios] = await conn.query(
+    //     'SELECT rol FROM usuario WHERE uid_firebase = ?',
+    //     [decodedToken.uid]
+    // );
+
+    // if (
+    //     usuarios.length === 0 ||
+    //     usuarios[0].rol !== 'administrador'
+    // ) {
+    //     return res.status(403).json({
+    //         error: 'No tiene permisos para realizar esta acción'
+    //     });
+    // }
+
+
     let conn;
 
     try {
@@ -165,6 +196,117 @@ const registrarEventos = async (req, res) => {
     }
 };
 
+const HabilitarSectoresEvento = async (req, res) => {
+    const { id_evento, nombre_sectores } = req.body;
+    if (!id_evento || !nombre_sectores || !Array.isArray(nombre_sectores)) {
+        return res.status(400).json({
+            error: 'Faltan campos obligatorios o sectores no es un array'
+        });
+    }
+    try {
+        
+        // AUTENTICACIÓN FIREBASE (DESCOMENTAR CUANDO LA USES)
+
+        // const authHeader = req.headers.authorization;
+
+        // if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        //     return res.status(401).json({
+        //         error: 'Token requerido'
+        //     });
+        // }
+
+        // const token = authHeader.split(' ')[1];
+
+        // const decodedToken = await admin.auth().verifyIdToken(token);
+
+        // Verificar permisos de administrador
+
+        // const [usuarios] = await conn.query(
+        //     'SELECT rol FROM usuario WHERE uid_firebase = ?',
+        //     [decodedToken.uid]
+        // );
+
+        // if (
+        //     usuarios.length === 0 ||
+        //     usuarios[0].rol !== 'administrador'
+        // ) {
+        //     return res.status(403).json({
+        //         error: 'No tiene permisos para realizar esta acción'
+        //     });
+        // }
+
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        const [evento] = await conn.query(
+            `SELECT id_evento, id_estadio
+             FROM eventos
+             WHERE id_evento = ?`,
+            [id_evento]
+        );
+
+        if (evento.length === 0) {
+            return res.status(404).json({
+                error: 'Evento no encontrado'
+            });
+        }
+
+        const id_estadio = evento[0].id_estadio;
+        for (const nombre_sector of nombre_sectores) {
+
+            const [sector] = await conn.query(
+                `SELECT nombre
+                 FROM sector
+                 WHERE id_estadio = ? and nombre = ?`,
+                [id_estadio, nombre_sector]
+            );
+
+            if (sector.length === 0) {
+                await conn.rollback();
+                return res.status(404).json({
+                    error: `El sector ${nombre_sector} no existe en el estadio`
+                });
+            }
+
+            await conn.query(
+                `INSERT INTO utilizan (id_evento, id_estadio, nombre_sector)
+                 VALUES (?, ?, ?)`,
+                [id_evento, id_estadio, nombre_sector]
+            );
+        }
+
+        await conn.commit();
+
+        return res.json({
+            message: 'Sectores habilitados para el evento correctamente'
+        });
+    } catch (error) {
+        if (conn) {
+            await conn.rollback();
+        }
+
+        console.error(error);
+
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({
+                error: 'El sector ya estába habilitado para este evento'
+            });
+        }
+
+        return res.status(500).json({
+            error: error.message || 'Error interno al habilitar sectores para el evento'
+        });
+
+    } finally {
+        if (conn) {
+            conn.release();
+        }
+    }
+};
+
+    
+
+
 
 // GET para listar todos los eventos disponibles
 const listarEventos = async (req, res) => {
@@ -224,4 +366,4 @@ const obtenerSectoresEvento = async (req, res) => {
   }
 };
 
-module.exports = { listarEventos, obtenerSectoresEvento, registrarEventos };
+module.exports = { listarEventos, obtenerSectoresEvento, registrarEventos, HabilitarSectoresEvento };
