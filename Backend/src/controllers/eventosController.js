@@ -1,5 +1,171 @@
 const pool = require('../config/db');
 
+const registrarEventos = async (req, res) => {
+    const {
+        fecha_y_hora,
+        id_estadio,
+        id_equipo_local,
+        id_equipo_visitante,
+        id_administrador
+    } = req.body;
+
+    if (
+        !fecha_y_hora ||
+        !id_estadio ||
+        !id_equipo_local ||
+        !id_equipo_visitante ||
+        !id_administrador
+    ) {
+        return res.status(400).json({
+            error: 'Faltan campos obligatorios'
+        });
+    }
+
+    if (id_equipo_local === id_equipo_visitante) {
+        return res.status(400).json({
+            error: 'El equipo local y visitante no pueden ser el mismo'
+        });
+    }
+
+    let conn;
+
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        const [estadio] = await conn.query(
+            `SELECT id_estadio, pais
+             FROM estadio
+             WHERE id_estadio = ?`,
+            [id_estadio]
+        );
+
+        if (estadio.length === 0) {
+            return res.status(404).json({
+                error: 'El estadio no existe'
+            });
+        }
+
+        const [equipoLocal] = await conn.query(
+            `SELECT id_equipo
+             FROM equipos
+             WHERE id_equipo = ?`,
+            [id_equipo_local]
+        );
+
+        if (equipoLocal.length === 0) {
+            return res.status(404).json({
+                error: 'El equipo local no existe'
+            });
+        }
+
+        const [equipoVisitante] = await conn.query(
+            `SELECT id_equipo
+             FROM equipos
+             WHERE id_equipo = ?`,
+            [id_equipo_visitante]
+        );
+
+        if (equipoVisitante.length === 0) {
+            return res.status(404).json({
+                error: 'El equipo visitante no existe'
+            });
+        }
+
+        const [admin] = await conn.query(
+            `SELECT a.id_usuario, u.direccion_pais
+             FROM administrador a
+             JOIN usuario u ON a.id_usuario = u.id_usuario
+             WHERE a.id_usuario = ?`,
+            [id_administrador]
+        );
+
+        if (admin.length === 0) {
+            return res.status(404).json({
+                error: 'Administrador no encontrado'
+            });
+        }
+
+        if (admin[0].direccion_pais !== estadio[0].pais) {
+            return res.status(403).json({
+                error: 'El administrador no puede registrar eventos en otro país'
+            });
+        }
+
+        const [eventoExistente] = await conn.query(
+            `SELECT id_evento
+             FROM eventos
+             WHERE id_estadio = ?
+             AND DATE(fecha_y_hora) = DATE(?)`,
+            [id_estadio, fecha_y_hora]
+        );
+
+        if (eventoExistente.length > 0) {
+            return res.status(409).json({
+                error: 'Ya existe un evento en este estadio ese día'
+            });
+        }
+
+        const [resultado] = await conn.query(
+            `INSERT INTO eventos (
+                fecha_y_hora,
+                id_estadio,
+                id_administrador
+            ) VALUES (?, ?, ?)`,
+            [
+                fecha_y_hora,
+                id_estadio,
+                id_administrador
+            ]
+        );
+
+        const id_evento = resultado.insertId;
+
+        await conn.query(
+            `INSERT INTO participan (
+                id_evento,
+                id_equipo
+            ) VALUES (?, ?), (?, ?)`,
+            [
+                id_evento,
+                id_equipo_local,
+                id_evento,
+                id_equipo_visitante
+            ]
+        );
+
+        await conn.commit();
+
+        return res.status(201).json({
+            message: 'Evento registrado correctamente',
+            id_evento
+        });
+
+    } catch (error) {
+        if (conn) {
+            await conn.rollback();
+        }
+
+        console.error(error);
+
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({
+                error: 'El evento ya existe'
+            });
+        }
+
+        return res.status(500).json({
+            error: error.message || 'Error interno al registrar el evento'
+        });
+
+    } finally {
+        if (conn) {
+            conn.release();
+        }
+    }
+};
+
+
 // GET para listar todos los eventos disponibles
 const listarEventos = async (req, res) => {
   try {
@@ -58,4 +224,4 @@ const obtenerSectoresEvento = async (req, res) => {
   }
 };
 
-module.exports = { listarEventos, obtenerSectoresEvento };
+module.exports = { listarEventos, obtenerSectoresEvento, registrarEventos };
