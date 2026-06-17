@@ -1,9 +1,11 @@
 const router = require ('express').Router();
 const auth = require('../middleware/auth');
-const { registrarEstadio } = require('../controllers/estadiosController');
+const { registrarEstadio, obtenerEstadio, agregarSectoresAEstadio } = require('../controllers/estadiosController');
 
 router.post('/registro', registrarEstadio);
 
-router.get('/', (req, res) => res.json({ message: 'ruta estadios ok' }));
+router.get('/obtener', obtenerEstadio);
+
+router.post('/agregarSectores', agregarSectoresAEstadio);
 
 module.exports = router;

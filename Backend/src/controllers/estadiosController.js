@@ -118,6 +118,83 @@ const registrarEstadio = async (req, res) => {
     }
 };
 
+const agregarSectoresAEstadio = async (req, res) => {
+    const { id_estadio, sectores } = req.body;
+
+    if (!id_estadio || !sectores || !Array.isArray(sectores)) {
+        return res.status(400).json({
+            error: 'Faltan campos obligatorios o sectores no es un array'
+        });
+    }
+
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        for (const sector of sectores) {
+
+            if (!sector.nombre || !sector.capacidad) {
+                throw new Error(
+                    'Todos los sectores deben tener nombre y capacidad'
+                );
+            }
+
+            const [estadio] = await conn.query(
+                `SELECT id_estadio
+                 FROM estadio
+                 WHERE id_estadio = ?`,
+                [id_estadio]
+            );
+
+            if (estadio.length === 0) {
+                throw new Error('Estadio no encontrado');
+             }
+
+            await conn.query(
+                `INSERT INTO sector (
+                    id_estadio,
+                    nombre,
+                    capacidad
+                ) VALUES (?, ?, ?)`,
+                [
+                    id_estadio,
+                    sector.nombre,
+                    sector.capacidad
+                ]
+            );
+        }
+
+        await conn.commit();
+
+        return res.status(201).json({
+            message: 'Sectores agregados correctamente al estadio',
+            id_estadio
+        });
+
+    } catch (error) {
+        if (conn) {
+            await conn.rollback();
+        }
+
+        console.error(error);
+
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({
+                error: 'El sector ya existe en el estadio'
+            });
+        }
+
+        return res.status(500).json({
+            error: error.message || 'Error interno al agregar sectores al estadio'
+        });
+
+    } finally {
+        if (conn) {
+            conn.release();
+        }
+    }
+};
+
 const obtenerEstadio = async (req, res) => {
     const { id_estadio } = req.body;
 
@@ -168,5 +245,6 @@ const obtenerEstadio = async (req, res) => {
 
 module.exports = {
     registrarEstadio,
-    obtenerEstadio
+    obtenerEstadio,
+    agregarSectoresAEstadio
 };
