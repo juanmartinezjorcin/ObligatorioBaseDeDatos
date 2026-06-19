@@ -8,7 +8,7 @@ router.get('/', listarEventos);
 //ver sectores de evento
 router.get('/:id/sectores', obtenerSectoresEvento);
 
-router.post('/registro', registrarEventos);
+router.post('/registro', auth, registrarEventos);
 
 router.post('/habilitar-sectores', HabilitarSectoresEvento);
 
