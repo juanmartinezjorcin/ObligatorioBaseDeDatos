@@ -6,6 +6,4 @@ router.get('/', auth, traerEntradas);
 
 router.get('/validas', auth, traerEntradasValidas);
 
-router.get('/', (req, res) => res.json({ message: 'ruta entradas ok' }));
-
 module.exports = router;
