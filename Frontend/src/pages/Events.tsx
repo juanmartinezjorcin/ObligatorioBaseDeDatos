@@ -136,6 +136,14 @@ const Eventos = () => {
                       </span>
                     </div>
                   ))}
+                  {!cargandoSectores && sectores.length > 0 && role !== 'administrador' && (
+                    <button
+                      onClick={() => navigate(`/events/${evento.id_evento}/buy`)}
+                      style={{ width: '100%', marginTop: '12px' }}
+                    >
+                      Comprar entradas
+                    </button>
+                  )}
                 </div>
               )}
             </div>

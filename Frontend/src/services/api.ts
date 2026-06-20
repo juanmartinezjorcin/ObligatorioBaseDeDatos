@@ -78,3 +78,14 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         listar: () => request('/estadios/listar'),
     };
     
+    //endpoint ventas
+    export const ventasApi = {
+        comprar: (data: object) => request('/ventas/comprar', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        }),
+        confirmar: (id_venta: number) => request('/ventas/confirmar', {
+        method: 'POST',
+        body: JSON.stringify({ id_venta }),
+        }),
+    };  

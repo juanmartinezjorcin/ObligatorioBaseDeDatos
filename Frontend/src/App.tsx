@@ -11,6 +11,7 @@ import Events from './pages/Events';
 import Transfers from './pages/Transfers';
 import AdminHome from './pages/AdminHome';
 import CreateEvent from './pages/CreateEvent';
+import BuyTickets from './pages/BuyTickets';
 
 function App() {
   return (
@@ -53,6 +54,11 @@ function App() {
             <AdminRoute>
               <CreateEvent />
             </AdminRoute>
+          } />
+          <Route path="/events/:id/buy" element={
+         <ProtectedRoute>
+           <BuyTickets />
+         </ProtectedRoute>
           } />
         </Routes>
       </BrowserRouter>
