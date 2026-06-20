@@ -7,7 +7,7 @@ router.post('/registro', registrarUsuario);
 
 router.get('/perfil', auth, obtenerPerfil);
 
-router.post('/registro_admin', auth, registrarAdmin);
+router.post('/registro_admin', registrarAdmin);
 
 router.get('/', (req, res) => res.json({ message: 'ruta usuarios ok' }));
 
