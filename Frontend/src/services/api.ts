@@ -35,4 +35,12 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         perfil: () => request('/usuarios/perfil'),
     };
 
+    export const entradasApi = { 
+        todas: () => request('/entradas'),
+        validas: () => request('/entradas/validas'),
+    };
 
+    export const eventosApi = {
+        listar: () => request('/eventos'),
+        sectores: (id: number) => request(`/eventos/${id}/sectores`),
+    };
