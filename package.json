@@ -1,8 +1,14 @@
 {
   "dependencies": {
-    "firebase": "^12.14.0"
+    "firebase": "^12.14.0",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.0"
   },
   "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react": "^6.0.2",
     "vite": "^8.0.16"
   }
