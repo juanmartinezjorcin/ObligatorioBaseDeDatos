@@ -149,11 +149,23 @@ const registrarEventos = async (req, res) => {
 };
 
 const HabilitarSectoresEvento = async (req, res) => {
-    const { id_evento, nombre_sectores } = req.body;
+    const { id_evento, nombre_sectores , precio} = req.body;
 
-    if (!id_evento || !nombre_sectores || !Array.isArray(nombre_sectores)) {
+    if (!id_evento || !nombre_sectores || !Array.isArray(nombre_sectores) || !precio) {
         return res.status(400).json({
             error: 'Faltan campos obligatorios o sectores no es un array'
+        });
+    }
+
+    if (nombre_sectores.length === 0) {
+        return res.status(400).json({
+            error: 'Debe proporcionar al menos un sector para habilitar'
+        });
+    }
+
+    if (precio <= 0) {
+        return res.status(400).json({
+            error: 'El precio debe ser un número positivo'
         });
     }
 
@@ -209,9 +221,9 @@ const HabilitarSectoresEvento = async (req, res) => {
             }
 
             await conn.query(
-                `INSERT INTO utilizan (id_evento, id_estadio, nombre_sector)
-                 VALUES (?, ?, ?)`,
-                [id_evento, id_estadio, nombre_sector]
+                `INSERT INTO utilizan (id_evento, id_estadio, nombre_sector, precio)
+                 VALUES (?, ?, ?, ?)`,
+                [id_evento, id_estadio, nombre_sector, precio]
             );
         }
 
