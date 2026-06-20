@@ -5,6 +5,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import MisEntradas from './pages/MisEntradas';
 
 function App() {
   return (
@@ -21,6 +22,11 @@ function App() {
           <Route path="/profile" element={
             <ProtectedRoute>
               <Profile />
+            </ProtectedRoute>
+          } />
+          <Route path="/mis-entradas" element={
+            <ProtectedRoute>
+              <MisEntradas />
             </ProtectedRoute>
           } />
         </Routes>
