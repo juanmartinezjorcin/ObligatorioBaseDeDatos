@@ -6,6 +6,4 @@ router.post('/comprar', auth, comprarEntradas);
 
 router.post('/confirmar', auth, confirmarEntradas);
 
-router.get('/', (req, res) => res.json({ message: 'ruta ventas ok' }));
-
 module.exports = router;

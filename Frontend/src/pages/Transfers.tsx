@@ -1,30 +1,38 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { entradasApi, transferenciasApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
-const Transferencias = () => {
+const Transfers = () => {
+  const { user } = useAuth();
   const [misEntradas, setMisEntradas] = useState<any[]>([]);
   const [seleccionadas, setSeleccionadas] = useState<number[]>([]);
   const [pais, setPais] = useState('Uruguay');
   const [documento, setDocumento] = useState('');
-  const [idConfirmar, setIdConfirmar] = useState('');
+  const [transferencias, setTransferencias] = useState<any[]>([]);
   const [mensaje, setMensaje] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [confirmandoId, setConfirmandoId] = useState<number | null>(null);
   const navigate = useNavigate();
 
+  const cargarTodo = async () => {
+    try {
+      const [entradas, transferenciasRes] = await Promise.all([
+        entradasApi.validas(),
+        transferenciasApi.listar(),
+      ]);
+      setMisEntradas(entradas);
+      setTransferencias(transferenciasRes.transferencias);
+    } catch (e) {
+      setError('No se pudieron cargar tus datos');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const cargar = async () => {
-      try {
-        const data = await entradasApi.validas();
-        setMisEntradas(data);
-      } catch (e) {
-        setError('No se pudieron cargar tus entradas');
-      } finally {
-        setLoading(false);
-      }
-    };
-    cargar();
+    cargarTodo();
   }, []);
 
   const toggleSeleccion = (id: number) => {
@@ -47,25 +55,39 @@ const Transferencias = () => {
         documento_destinatario: documento,
         entradas: seleccionadas.map(id => ({ id_entrada: id })),
       });
-      setMensaje(`Transferencia creada (ID ${res.id_venta}). El destinatario debe confirmarla.`);
+      setMensaje(`Transferencia creada (ID ${res.id_transferencia}). El destinatario debe confirmarla.`);
       setSeleccionadas([]);
       setDocumento('');
+      cargarTodo();
     } catch (err: any) {
       setError(err.message);
     }
   };
 
-  const handleConfirmar = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleConfirmar = async (id_transferencia: number) => {
     setError('');
     setMensaje('');
+    setConfirmandoId(id_transferencia);
     try {
-      await transferenciasApi.confirmar(Number(idConfirmar));
+      await transferenciasApi.confirmar(id_transferencia);
       setMensaje('Transferencia confirmada correctamente');
-      setIdConfirmar('');
+      cargarTodo();
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setConfirmandoId(null);
     }
+  };
+
+  const recibidasPendientes = transferencias.filter(
+    t => t.id_destinatario === user?.uid && t.estado_transferencia === 'pendiente'
+  );
+  const enviadas = transferencias.filter(t => t.id_ofertante === user?.uid);
+
+  const badgeColor = (estado: string) => {
+    if (estado === 'pendiente') return { bg: 'var(--color-background-warning)', text: 'var(--color-text-warning)' };
+    if (estado === 'aceptada') return { bg: 'var(--color-background-success)', text: 'var(--color-text-success)' };
+    return { bg: 'var(--color-background-secondary)', text: 'var(--color-text-secondary)' };
   };
 
   return (
@@ -109,6 +131,52 @@ const Transferencias = () => {
           </p>
         )}
 
+        {/* Transferencias pendientes de aceptar */}
+        <div style={{
+          background: 'var(--color-background-primary)',
+          border: '0.5px solid var(--color-border-tertiary)',
+          borderRadius: 'var(--border-radius-lg)',
+          padding: '1.25rem',
+          marginBottom: '1.5rem',
+        }}>
+          <h2 style={{ fontSize: '15px', fontWeight: 500, margin: '0 0 1rem' }}>Recibidas pendientes</h2>
+
+          {loading && <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>Cargando...</p>}
+
+          {!loading && recibidasPendientes.length === 0 && (
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>No tenés transferencias pendientes</p>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {recibidasPendientes.map((t) => (
+              <div key={t.id_transferencia} style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 12px',
+                border: '0.5px solid var(--color-border-tertiary)',
+                borderRadius: 'var(--border-radius-md)',
+              }}>
+                <div>
+                  <p style={{ fontSize: '13px', fontWeight: 500, margin: '0 0 2px' }}>
+                    De {t.mail_ofertante}
+                  </p>
+                  <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
+                    {new Date(t.fecha_transferencia).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleConfirmar(t.id_transferencia)}
+                  disabled={confirmandoId === t.id_transferencia}
+                >
+                  {confirmandoId === t.id_transferencia ? 'Confirmando...' : 'Aceptar'}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Crear transferencia */}
         <div style={{
           background: 'var(--color-background-primary)',
           border: '0.5px solid var(--color-border-tertiary)',
@@ -117,8 +185,6 @@ const Transferencias = () => {
           marginBottom: '1.5rem',
         }}>
           <h2 style={{ fontSize: '15px', fontWeight: 500, margin: '0 0 1rem' }}>Transferir entradas</h2>
-
-          {loading && <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>Cargando tus entradas...</p>}
 
           {!loading && misEntradas.length === 0 && (
             <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>No tenés entradas disponibles para transferir</p>
@@ -172,27 +238,57 @@ const Transferencias = () => {
           )}
         </div>
 
+        {/* Historial enviadas */}
         <div style={{
           background: 'var(--color-background-primary)',
           border: '0.5px solid var(--color-border-tertiary)',
           borderRadius: 'var(--border-radius-lg)',
           padding: '1.25rem',
         }}>
-          <h2 style={{ fontSize: '15px', fontWeight: 500, margin: '0 0 1rem' }}>Confirmar transferencia recibida</h2>
-          <form onSubmit={handleConfirmar} style={{ display: 'flex', gap: '8px' }}>
-            <input
-              placeholder="ID de transferencia"
-              value={idConfirmar}
-              onChange={e => setIdConfirmar(e.target.value)}
-              style={{ flex: 1 }}
-              required
-            />
-            <button type="submit">Confirmar</button>
-          </form>
+          <h2 style={{ fontSize: '15px', fontWeight: 500, margin: '0 0 1rem' }}>Transferencias enviadas</h2>
+
+          {!loading && enviadas.length === 0 && (
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)' }}>No enviaste transferencias todavía</p>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {enviadas.map((t) => {
+              const colors = badgeColor(t.estado_transferencia);
+              return (
+                <div key={t.id_transferencia} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 12px',
+                  border: '0.5px solid var(--color-border-tertiary)',
+                  borderRadius: 'var(--border-radius-md)',
+                }}>
+                  <div>
+                    <p style={{ fontSize: '13px', fontWeight: 500, margin: '0 0 2px' }}>
+                      Para {t.mail_destinatario}
+                    </p>
+                    <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', margin: 0 }}>
+                      {new Date(t.fecha_transferencia).toLocaleString()}
+                    </p>
+                  </div>
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: 500,
+                    padding: '4px 10px',
+                    borderRadius: 'var(--border-radius-md)',
+                    background: colors.bg,
+                    color: colors.text,
+                  }}>
+                    {t.estado_transferencia}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default Transferencias;
+export default Transfers;

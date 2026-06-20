@@ -8,6 +8,4 @@ router.post('/confirmar', auth, confirmarTransferencia);
 
 router.get('/listar', auth, listaTransferencias);
 
-router.get('/', (req, res) => res.json({ message: 'ruta transferencias ok' }));
-
 module.exports = router;
