@@ -91,7 +91,7 @@ const crearTransferencia = async (req, res) => {
 
         return res.status(201).json({
             message: 'Transferencia creada correctamente. Pendiente de aceptación por el destinatario.',
-            id_venta: result.insertId
+            id_transferencia: result.insertId
         });
 
     } catch (error) {
@@ -109,12 +109,17 @@ const confirmarTransferencia = async (req, res) => {
     const { id_transferencia } = req.body;
 
     if (!id_transferencia) {
-        return res.status(400).json({ error: 'Faltan datos requeridos' });
+        return res.status(400).json({
+            error: 'Faltan datos requeridos'
+        });
     }
 
     const authHeader = req.headers.authorization;
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Token requerido' });
+        return res.status(401).json({
+            error: 'Token requerido'
+        });
     }
 
     const token = authHeader.split(' ')[1];
@@ -136,44 +141,63 @@ const confirmarTransferencia = async (req, res) => {
         await conn.beginTransaction();
 
         const [transferencia] = await conn.query(`
-            SELECT id_transferencia, id_destinatario
+            SELECT *
             FROM transferencia
-            WHERE id_transferencia = ? AND id_destinatario = ?
+            WHERE id_transferencia = ?
+              AND id_destinatario = ?
         `, [id_transferencia, id_usuario]);
 
         if (transferencia.length === 0) {
             await conn.rollback();
-            return res.status(404).json({ error: 'Transferencia no encontrada' });
+            return res.status(404).json({
+                error: 'Transferencia no encontrada'
+            });
         }
 
         if (transferencia[0].estado_transferencia !== 'pendiente') {
             await conn.rollback();
-            return res.status(400).json({ error: 'La transferencia no está pendiente de confirmación' });
-        }
-
-        if (transferencia[0].id_destinatario !== id_usuario) {
-            await conn.rollback();
-            return res.status(403).json({ error: 'No autorizado para confirmar esta transferencia' });
+            return res.status(400).json({
+                error: 'La transferencia no está pendiente'
+            });
         }
 
         const [entradas] = await conn.query(`
             SELECT e.id_entrada, e.numero_transferencias
             FROM entrada e
-            JOIN transferencia_entrada te ON e.id_entrada = te.id_entrada
+            JOIN transferencia_entrada te
+                ON e.id_entrada = te.id_entrada
             WHERE te.id_transferencia = ?
         `, [id_transferencia]);
+
+        if (entradas.length === 0) {
+            await conn.rollback();
+            return res.status(404).json({
+                error: 'No hay entradas asociadas a la transferencia'
+            });
+        }
 
         for (const entrada of entradas) {
             if (entrada.numero_transferencias >= 3) {
                 await conn.rollback();
-                return res.status(400).json({ error: `La entrada ${entrada.id_entrada} ha alcanzado el límite de transferencias` });
+                return res.status(400).json({
+                    error: `La entrada ${entrada.id_entrada} alcanzó el límite de transferencias`
+                });
             }
             await conn.query(`
                 UPDATE entrada
                 SET numero_transferencias = numero_transferencias + 1,
                     id_dueño = ?
                 WHERE id_entrada = ?
-            `, [ id_usuario, entrada.id_entrada]);
+            `, [id_usuario, entrada.id_entrada]);
+            await conn.query(`
+                UPDATE transferencia t
+                JOIN transferencia_entrada te
+                    ON t.id_transferencia = te.id_transferencia
+                SET t.estado_transferencia = 'rechazada'
+                WHERE te.id_entrada = ?
+                AND t.estado_transferencia = 'pendiente'
+                AND t.id_transferencia <> ?
+            `, [entrada.id_entrada, id_transferencia]);
         }
 
         await conn.query(`
@@ -184,17 +208,20 @@ const confirmarTransferencia = async (req, res) => {
 
         await conn.commit();
 
-        return res.status(201).json({
+        return res.status(200).json({
             message: 'Transferencia confirmada correctamente',
-            transferencia: id_transferencia
+            id_transferencia
         });
 
     } catch (error) {
         if (conn) await conn.rollback();
+
         console.error(error);
+
         return res.status(500).json({
             error: error.message || 'Error interno'
         });
+
     } finally {
         if (conn) conn.release();
     }
