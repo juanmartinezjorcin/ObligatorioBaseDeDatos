@@ -126,6 +126,93 @@ const generarQR = async (req, res) => {
     }
 };
 
+const validarQR = async (req, res) => {
+    const { qrData } = req.body;
+
+    if (!qrData) {
+        return res.status(400).json({ error: 'Falta qrData' });
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Token requerido' });
+    }
+
+    const token = authHeader.split(' ')[1];
 
 
-module.exports = { traerEntradas, traerEntradasValidas, generarQR };
+
+    let conn;
+
+try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+
+    const decodedToken = await getAuth().verifyIdToken(token);
+
+    if (decodedToken.role !== 'funcionario') {
+        return res.status(403).json({
+            error: 'No autorizado'
+        });
+    }
+
+    const id_funcionario = decodedToken.uid;
+
+    const { id_entrada, uid, timestamp } = qrData;
+
+    const [entrada] = await conn.query(`
+        SELECT *
+        FROM entrada
+        WHERE id_entrada = ?
+    `, [id_entrada]);
+
+    if (!entrada.length) {
+        await conn.rollback();
+        return res.status(404).json({
+            error: 'Entrada no encontrada'
+        });
+    }
+
+    if (entrada[0].id_dueño !== uid) {
+        await conn.rollback();
+        return res.status(403).json({
+            error: 'No autorizado para esta entrada'
+        });
+    }
+
+    if (!entrada[0].validez) {
+        await conn.rollback();
+        return res.status(400).json({
+            error: 'La entrada no es válida'
+        });
+    }
+
+    if (timestamp < Date.now() - 40 * 1000) {
+        await conn.rollback();
+        return res.status(400).json({
+            error: 'QR expirado'
+        });
+    }
+
+    await conn.query(`
+        UPDATE entrada
+        SET validez = false
+        WHERE id_entrada = ?
+    `, [id_entrada]);
+
+    await conn.commit();
+
+    return res.json({
+        message: 'Entrada validada exitosamente'
+    });
+    } catch (error) {
+        if (conn) {
+            await conn.rollback();
+        }
+        console.error('Error al validar QR:', error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
+
+module.exports = { traerEntradas, traerEntradasValidas, generarQR , validarQR};
+
