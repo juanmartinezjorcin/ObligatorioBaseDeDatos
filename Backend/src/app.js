@@ -19,6 +19,7 @@ app.use('/api/entradas',       require('./routes/entradas'));
 app.use('/api/ventas',         require('./routes/ventas'));
 app.use('/api/transferencias', require('./routes/transferencias'));
 app.use('/api/equipos',        require('./routes/equipos'));
+app.use('/api/dispositivos',   require('./routes/dispositivos'));
 
 //esto lo puse solo para saber si esta vivo el server
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));

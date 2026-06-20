@@ -140,77 +140,119 @@ const validarQR = async (req, res) => {
 
     const token = authHeader.split(' ')[1];
 
-
-
     let conn;
 
-try {
-    conn = await pool.getConnection();
-    await conn.beginTransaction();
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
 
-    const decodedToken = await getAuth().verifyIdToken(token);
+        const decodedToken = await getAuth().verifyIdToken(token);
 
-    if (decodedToken.role !== 'funcionario') {
-        return res.status(403).json({
-            error: 'No autorizado'
-        });
-    }
-
-    const id_funcionario = decodedToken.uid;
-
-    const { id_entrada, uid, timestamp } = qrData;
-
-    const [entrada] = await conn.query(`
-        SELECT *
-        FROM entrada
-        WHERE id_entrada = ?
-    `, [id_entrada]);
-
-    if (!entrada.length) {
-        await conn.rollback();
-        return res.status(404).json({
-            error: 'Entrada no encontrada'
-        });
-    }
-
-    if (entrada[0].id_dueño !== uid) {
-        await conn.rollback();
-        return res.status(403).json({
-            error: 'No autorizado para esta entrada'
-        });
-    }
-
-    if (!entrada[0].validez) {
-        await conn.rollback();
-        return res.status(400).json({
-            error: 'La entrada no es válida'
-        });
-    }
-
-    if (timestamp < Date.now() - 40 * 1000) {
-        await conn.rollback();
-        return res.status(400).json({
-            error: 'QR expirado'
-        });
-    }
-
-    await conn.query(`
-        UPDATE entrada
-        SET validez = false
-        WHERE id_entrada = ?
-    `, [id_entrada]);
-
-    await conn.commit();
-
-    return res.json({
-        message: 'Entrada validada exitosamente'
-    });
-    } catch (error) {
-        if (conn) {
+        if (decodedToken.role !== 'funcionario') {
             await conn.rollback();
+            return res.status(403).json({ error: 'No autorizado' });
         }
+
+        const id_funcionario = decodedToken.uid;
+        const { id_entrada, uid, timestamp } = qrData;
+
+        const [lugar] = await conn.query(`
+            SELECT *
+            FROM asignado
+            WHERE id_funcionario = ?
+        `, [id_funcionario]);
+
+        if (lugar.length === 0) {
+            await conn.rollback();
+            return res.status(403).json({
+                error: 'Funcionario no asignado'
+            });
+        }
+
+        const [dispositivo] = await conn.query(`
+            SELECT *
+            FROM dispositivo
+            WHERE id_funcionario = ?
+        `, [id_funcionario]);
+
+        if (dispositivo.length === 0) {
+            await conn.rollback();
+            return res.status(403).json({
+                error: 'Dispositivo no autorizado'
+            });
+        }
+
+        const [entrada] = await conn.query(`
+            SELECT *
+            FROM entrada
+            WHERE id_entrada = ?
+        `, [id_entrada]);
+
+        if (entrada.length === 0) {
+            await conn.rollback();
+            return res.status(404).json({
+                error: 'Entrada no encontrada'
+            });
+        }
+
+        if (
+            lugar[0].id_estadio != entrada[0].id_estadio ||
+            lugar[0].id_evento != entrada[0].id_evento ||
+            lugar[0].nombre_sector != entrada[0].nombre_sector
+        ) {
+            await conn.rollback();
+            return res.status(403).json({
+                error: 'Funcionario no asignado a este evento/sector'
+            });
+        }
+
+        if (entrada[0].id_dueño !== uid) {
+            await conn.rollback();
+            return res.status(403).json({
+                error: 'QR inválido'
+            });
+        }
+
+        if (!entrada[0].validez) {
+            await conn.rollback();
+            return res.status(400).json({
+                error: 'La entrada no es válida'
+            });
+        }
+
+        if (timestamp < Date.now() - 40 * 1000) {
+            await conn.rollback();
+            return res.status(400).json({
+                error: 'QR expirado'
+            });
+        }
+
+        await conn.query(`
+            UPDATE entrada
+            SET validez = FALSE
+            WHERE id_entrada = ?
+        `, [id_entrada]);
+
+        await conn.query(`
+            INSERT INTO valida (id_entrada, id_funcionario, id_dispositivo)
+            VALUES (?, ?, ?)
+        `, [id_entrada, id_funcionario, dispositivo[0].id_dispositivo]);
+
+        await conn.commit();
+
+        return res.json({
+            message: 'Entrada validada exitosamente'
+        });
+
+    } catch (error) {
+        if (conn) await conn.rollback();
         console.error('Error al validar QR:', error);
-        return res.status(500).json({ error: 'Error interno del servidor' });
+
+        return res.status(500).json({
+            error: 'Error interno del servidor'
+        });
+    } finally {
+        if (conn) conn.release();
     }
 };
 
