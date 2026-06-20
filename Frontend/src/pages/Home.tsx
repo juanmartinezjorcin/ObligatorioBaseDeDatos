@@ -61,8 +61,8 @@ const Home = () => {
         }}>
           {[
             { icon: 'ti-ticket', label: 'Mis entradas', desc: 'Ver entradas asignadas', path: '/mis-entradas' },
-            { icon: 'ti-transfer', label: 'Transferencias', desc: 'Enviar o recibir entradas', path: '/transferencias' },
-            { icon: 'ti-calendar-event', label: 'Eventos', desc: 'Ver partidos disponibles', path: '/eventos' },
+            { icon: 'ti-transfer', label: 'Transferencias', desc: 'Enviar o recibir entradas', path: '/transfers' },
+            { icon: 'ti-calendar-event', label: 'Eventos', desc: 'Ver partidos disponibles', path: '/events' },
           ].map(({ icon, label, desc, path }) => (
             <div
               key={label}

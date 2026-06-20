@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import MisEntradas from './pages/MisEntradas';
+import Events from './pages/Events';
+import Transfers from './pages/Transfers';
 
 function App() {
   return (
@@ -27,6 +29,16 @@ function App() {
           <Route path="/mis-entradas" element={
             <ProtectedRoute>
               <MisEntradas />
+            </ProtectedRoute>
+          } />
+           <Route path="/events" element={
+            <ProtectedRoute>
+              <Events />
+            </ProtectedRoute>
+          } />
+              <Route path="/transfers" element={
+            <ProtectedRoute>
+              <Transfers />
             </ProtectedRoute>
           } />
         </Routes>

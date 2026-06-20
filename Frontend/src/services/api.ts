@@ -44,3 +44,15 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         listar: () => request('/eventos'),
         sectores: (id: number) => request(`/eventos/${id}/sectores`),
     };
+
+        //endpoint transferencias
+    export const transferenciasApi = {
+        crear: (data: object) => request('/transferencias/crear', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        }),
+        confirmar: (id_transferencia: number) => request('/transferencias/confirmar', {
+        method: 'POST',
+        body: JSON.stringify({ id_transferencia }),
+        }),
+    };

@@ -63,7 +63,7 @@ const crearTransferencia = async (req, res) => {
 
         }
 
-        if (entradaData.length < entradas.length) {
+        if (entradasData.length < entradas.length) {
             await conn.rollback();
             return res.status(400).json({ error: 'Algunas entradas no se encontraron' });
         }
@@ -186,7 +186,7 @@ const confirmarTransferencia = async (req, res) => {
 
         return res.status(201).json({
             message: 'Transferencia confirmada correctamente',
-            id_venta: id_venta
+            transferencia: id_transferencia
         });
 
     } catch (error) {
