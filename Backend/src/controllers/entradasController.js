@@ -1,6 +1,7 @@
 const pool = require('../config/db');
+const { getAuth } = require('firebase-admin/auth');
 
-traerEntradas = async (req, res) => {
+const traerEntradas = async (req, res) => {
     const { } = req.query;
 
     const authHeader = req.headers.authorization;
@@ -27,7 +28,7 @@ traerEntradas = async (req, res) => {
     }
 };
 
-traerEntradasValidas = async (req, res) => {
+const traerEntradasValidas = async (req, res) => {
     const { } = req.query;
 
     const authHeader = req.headers.authorization;

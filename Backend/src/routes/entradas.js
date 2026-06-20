@@ -1,10 +1,10 @@
 const router = require ('express').Router();
 const auth = require('../middleware/auth');
-const { comprarEntradas, confirmarEntradas} = require('../controllers/ventasController');
+const { traerEntradas, traerEntradasValidas} = require('../controllers/entradasController');
 
-router.post('/comprar', auth, comprarEntradas);
+router.get('/', auth, traerEntradas);
 
-router.post('/confirmar', auth, confirmarEntradas);
+router.get('/validas', auth, traerEntradasValidas);
 
 router.get('/', (req, res) => res.json({ message: 'ruta entradas ok' }));
 
