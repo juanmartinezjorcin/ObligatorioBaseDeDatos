@@ -43,7 +43,7 @@ const crearTransferencia = async (req, res) => {
         }
 
         const [result] = await conn.query(`
-            INSERT INTO transferencia (id_oferente, id_destinatario, fecha, estado_transferencia)
+            INSERT INTO transferencia (id_ofertante, id_destinatario, fecha_transferencia, estado_transferencia)
             VALUES (?, ?, NOW(),"pendiente")
         `, [id_usuario, destinatario[0].id_usuario]);
 
