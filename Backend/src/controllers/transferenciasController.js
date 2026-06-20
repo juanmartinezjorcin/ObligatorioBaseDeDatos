@@ -227,4 +227,55 @@ const confirmarTransferencia = async (req, res) => {
     }
 };
 
-module.exports = { crearTransferencia, confirmarTransferencia };
+const listaTransferencias = async (req, res) => {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Token requerido' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    let conn;
+
+    try {
+        const decodedToken = await getAuth().verifyIdToken(token);
+        const rolUsuario = decodedToken.role;
+        const id_usuario = decodedToken.uid;
+
+        if (rolUsuario !== 'general') {
+            return res.status(403).json({ error: 'No autorizado' });
+        }
+
+        conn = await pool.getConnection();
+
+        const [transferencias] = await conn.query(
+            `SELECT 
+                t.id_transferencia,
+                t.fecha_transferencia,
+                t.estado_transferencia,
+
+                t.id_ofertante,
+                uo.mail AS mail_ofertante,
+
+                t.id_destinatario,
+                ud.mail AS mail_destinatario
+
+            FROM transferencia t
+            JOIN usuario uo ON uo.id_usuario = t.id_ofertante
+            JOIN usuario ud ON ud.id_usuario = t.id_destinatario
+            WHERE t.id_ofertante = ?
+            OR t.id_destinatario = ?
+        `, [id_usuario, id_usuario]);
+
+        return res.status(200).json({
+            transferencias
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: error.message || 'Error interno' });
+    } finally {
+        if (conn) conn.release();
+    }
+};
+
+module.exports = { crearTransferencia, confirmarTransferencia, listaTransferencias };
