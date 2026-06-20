@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { eventosApi } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const Eventos = () => {
+  const { role } = useAuth();
   const [eventos, setEventos] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -47,7 +49,7 @@ const Eventos = () => {
       <div style={{ maxWidth: '720px', margin: '0 auto' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '1.5rem' }}>
-          <button onClick={() => navigate('/home')} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <button onClick={() => navigate(role === 'administrador' ? '/admin' : '/home')} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
             <i className="ti ti-arrow-left" style={{ fontSize: '16px' }} aria-hidden="true" />
             Volver
           </button>

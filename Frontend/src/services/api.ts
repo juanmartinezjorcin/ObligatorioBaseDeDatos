@@ -56,3 +56,25 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         body: JSON.stringify({ id_transferencia }),
         }),
     };
+
+    //endpoint admin - eventos
+    export const adminEventosApi = {
+        crear: (data: object) => request('/eventos/registro', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        }),
+        habilitarSectores: (data: object) => request('/eventos/habilitar-sectores', {
+        method: 'POST',
+        body: JSON.stringify(data),
+        }),
+    };
+
+    //endpoints admin - equipos - estadios
+    export const adminEquiposApi = {
+        listar: () => request('/equipos'),
+    };
+
+    export const adminEstadiosApi = {
+        listar: () => request('/estadios/listar'),
+    };
+    

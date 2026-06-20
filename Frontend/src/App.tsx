@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -8,6 +9,8 @@ import Profile from './pages/Profile';
 import MisEntradas from './pages/MisEntradas';
 import Events from './pages/Events';
 import Transfers from './pages/Transfers';
+import AdminHome from './pages/AdminHome';
+import CreateEvent from './pages/CreateEvent';
 
 function App() {
   return (
@@ -31,15 +34,25 @@ function App() {
               <MisEntradas />
             </ProtectedRoute>
           } />
-           <Route path="/events" element={
+          <Route path="/events" element={
             <ProtectedRoute>
               <Events />
             </ProtectedRoute>
           } />
-              <Route path="/transfers" element={
+          <Route path="/transfers" element={
             <ProtectedRoute>
               <Transfers />
             </ProtectedRoute>
+          } />
+          <Route path="/admin" element={
+            <AdminRoute>
+              <AdminHome />
+            </AdminRoute>
+          } />
+          <Route path="/admin/create-event" element={
+            <AdminRoute>
+              <CreateEvent />
+            </AdminRoute>
           } />
         </Routes>
       </BrowserRouter>

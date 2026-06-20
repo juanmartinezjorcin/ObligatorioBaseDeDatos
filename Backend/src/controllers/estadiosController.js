@@ -240,11 +240,29 @@ const obtenerEstadio = async (req, res) => {
     }
 };
 
+const listarEstadios = async (req, res) => {
+    try {
+        const [estadios] = await pool.query(`SELECT * FROM estadio`);
 
+        for (const estadio of estadios) {
+            const [sectores] = await pool.query(
+                `SELECT nombre, capacidad FROM sector WHERE id_estadio = ?`,
+                [estadio.id_estadio]
+            );
+            estadio.sectores = sectores;
+        }
+
+        res.json(estadios);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: 'Error interno del servidor' });
+    }
+};
 
 
 module.exports = {
     registrarEstadio,
     obtenerEstadio,
+    listarEstadios,
     agregarSectoresAEstadio
 };
