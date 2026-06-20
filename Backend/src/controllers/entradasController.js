@@ -126,4 +126,6 @@ const generarQR = async (req, res) => {
     }
 };
 
+
+
 module.exports = { traerEntradas, traerEntradasValidas, generarQR };
