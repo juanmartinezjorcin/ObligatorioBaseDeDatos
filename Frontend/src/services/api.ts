@@ -45,18 +45,6 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         sectores: (id: number) => request(`/eventos/${id}/sectores`),
     };
 
-        //endpoint transferencias
-    export const transferenciasApi = {
-        crear: (data: object) => request('/transferencias/crear', {
-        method: 'POST',
-        body: JSON.stringify(data),
-        }),
-        confirmar: (id_transferencia: number) => request('/transferencias/confirmar', {
-        method: 'POST',
-        body: JSON.stringify({ id_transferencia }),
-        }),
-    };
-
     //endpoint admin - eventos
     export const adminEventosApi = {
         crear: (data: object) => request('/eventos/registro', {
@@ -89,3 +77,15 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         body: JSON.stringify({ id_venta }),
         }),
     };  
+
+    export const transferenciasApi = {
+        crear: (data: object) => request('/transferencias/crear', {
+         method: 'POST',
+         body: JSON.stringify(data),
+         }),
+        confirmar: (id_transferencia: number) => request('/transferencias/confirmar', {
+         method: 'POST',
+        body: JSON.stringify({ id_transferencia }),
+        }),
+        listar: () => request('/transferencias/listar'),
+    };
