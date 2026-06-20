@@ -52,12 +52,12 @@ const traerEntradasValidas = async (req, res) => {
 
         for (const entrada of entradas) {
             const [Data] = await pool.query(`
-                SELECT fecha_hora
+                SELECT fecha_y_hora
                 FROM eventos
                 WHERE id_evento = ?
             `, [entrada.id_evento]);
             if (Data.length > 0) {
-                const fechaEvento = new Date(Data[0].fecha_hora);
+                const fechaEvento = new Date(Data[0].fecha_y_hora);
                 const fechaActual = new Date();
                 if (fechaEvento > fechaActual) {
                     entradasValidas.push(entrada);
