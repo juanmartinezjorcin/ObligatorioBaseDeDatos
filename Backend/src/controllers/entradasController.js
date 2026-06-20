@@ -72,8 +72,13 @@ const traerEntradasValidas = async (req, res) => {
     }
 };
 
+// http://localhost:3000/api/entradas/qr?id_entrada=11 ejemplo de uso, se debe enviar id
 const generarQR = async (req, res) => {
     const { id_entrada } = req.query;
+
+    if (!id_entrada) {
+        return res.status(400).json({ error: 'Falta id_entrada' });
+    }
 
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -81,8 +86,6 @@ const generarQR = async (req, res) => {
     }
 
     const token = authHeader.split(' ')[1];
-    let conn;
-
 
     try {
         const decodedToken = await getAuth().verifyIdToken(token);
@@ -99,21 +102,27 @@ const generarQR = async (req, res) => {
         }
 
         if (entrada[0].id_dueño !== id_usuario) {
-            return res.status(403).json({ error: 'No autorizado para generar QR de esta entrada' });
+            return res.status(403).json({ error: 'No autorizado para esta entrada' });
         }
 
         const qrData = JSON.stringify({
             id_entrada: id_entrada,
-            uid: firebaseUid,
+            uid: id_usuario,
             timestamp: Date.now()
         });
 
         const qrCode = await QRCode.toDataURL(qrData);
 
-        res.json({ ...entrada[0], qrCode });
+        console.log(qrData);
+
+        return res.json({
+            id_entrada: entrada[0].id_entrada,
+            qrCode
+        });
+
     } catch (error) {
         console.error('Error al generar QR:', error);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        return res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
 
