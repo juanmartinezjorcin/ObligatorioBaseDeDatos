@@ -28,6 +28,11 @@ const registrarUsuario = async (req, res) => {
             email: mail,
             password: password,
         });
+
+        await auth.setCustomUserClaims(firebaseUser.uid, {
+            role: 'general'
+        });
+
     } catch (firebaseError) {
         console.error('Error en Firebase Auth:', firebaseError);
         if (firebaseError.code === 'auth/email-already-exists') {
@@ -102,6 +107,112 @@ const registrarUsuario = async (req, res) => {
     }
 };
 
+const registrarAdmin = async (req, res) => {
+    const {
+        mail,
+        password,
+        tipo_documento,
+        numero_documento,
+        pais_documento,
+        direccion_pais,
+        direccion_localidad,
+        direccion_calle,
+        direccion_numero,
+        direccion_codigo_postal,
+        telefonos,
+    } = req.body;
+
+    if (!mail || !password || !tipo_documento || !numero_documento || !pais_documento) {
+        return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    }
+
+    const auth = getAuth();
+    let firebaseUser;
+
+    try {
+        firebaseUser = await auth.createUser({
+            email: mail,
+            password: password,
+        });
+
+        await auth.setCustomUserClaims(firebaseUser.uid, {
+            role: 'administrador'
+        });
+        
+    } catch (firebaseError) {
+        console.error('Error en Firebase Auth:', firebaseError);
+        if (firebaseError.code === 'auth/email-already-exists') {
+            return res.status(409).json({ error: 'El correo electrónico ya está registrado' });
+        }
+        if (firebaseError.code === 'auth/invalid-password') {
+            return res.status(400).json({ error: 'La contraseña debe tener al menos 6 caracteres' });
+        }
+        return res.status(500).json({ error: 'Error al registrar en el servicio de autenticación' });
+    }
+
+    const id_usuario = firebaseUser.uid;
+    let conn;
+
+    try {
+        conn = await pool.getConnection();
+        await conn.beginTransaction();
+
+        await conn.query(
+            `INSERT INTO usuario 
+                (id_usuario, mail, tipo_documento, numero_documento, pais_documento,
+                direccion_pais, direccion_localidad, direccion_calle, direccion_numero,
+                direccion_codigo_postal)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                id_usuario, mail, tipo_documento, numero_documento, pais_documento,
+                direccion_pais, direccion_localidad, direccion_calle, direccion_numero,
+                direccion_codigo_postal
+            ]
+        );
+
+        await conn.query(
+            `INSERT INTO administrador (id_usuario, fecha_asignacion_cargo)
+             VALUES (?, CURDATE())`,
+            [id_usuario]
+        );
+
+        if (telefonos && telefonos.length > 0) {
+            for (const telefono of telefonos) {
+                await conn.query(
+                    `INSERT INTO usuario_telefono (id_usuario, telefono) VALUES (?, ?)`,
+                    [id_usuario, telefono]
+                );
+            }
+        }
+
+        await conn.commit();
+        res.status(201).json({ message: 'Usuario registrado correctamente', id_usuario });
+
+    } catch (dbError) {
+            if (conn) {
+            await conn.rollback();
+        }
+        console.error('Error en base de datos. Revirtiendo Firebase Auth...', dbError);
+
+        try {
+            // decidimos eliminamar el usuario creado en Firebase para evitar inconsistencias
+            await auth.deleteUser(id_usuario);
+            console.log('Usuario de Firebase eliminado con éxito tras fallo en Base de Datos');
+        } catch (cleanupError) {
+            console.error('Error crítico: No se pudo limpiar el usuario en Firebase:', cleanupError);
+        }
+
+        if (dbError.code === 'ER_DUP_ENTRY') {
+            return res.status(409).json({ error: 'El documento o datos ya están registrados en el sistema' });
+        }
+        res.status(500).json({ error: 'Error interno al guardar los datos del perfil' });
+    } finally {
+        if (conn) {
+            conn.release();
+        }
+    }
+};
+
 const obtenerPerfil = async (req, res) => {
     const id_usuario = req.user.id_usuario;
     try {
@@ -122,5 +233,6 @@ const obtenerPerfil = async (req, res) => {
 
 module.exports = {
     registrarUsuario,
-    obtenerPerfil
+    obtenerPerfil,
+    registrarAdmin
 };
