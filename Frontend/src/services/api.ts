@@ -1,7 +1,5 @@
 import { auth } from '../../firebase';
-const BASE_URL = 'http://192.168.1.54:3000/api';
-
-//funcion para agregar token a cada request
+const BASE_URL = '/api';//funcion para agregar token a cada request
 
 const request = async (endpoint: string, options: RequestInit = {}) => {
     const user = auth.currentUser;
@@ -16,10 +14,9 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         headers, 
     });
     
-    if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Error en la solicitud');
-
+   if (!res.ok) {
+     const error = await res.json();
+     throw new Error(error.error || error.message || 'Error en la solicitud');
     }
 
     return res.json();

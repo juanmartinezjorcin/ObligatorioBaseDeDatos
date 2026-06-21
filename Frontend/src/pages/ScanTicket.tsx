@@ -52,16 +52,19 @@ const ScanTicket = () => {
     setEscaneando(false);
   };
 
-  const procesarQR = async (decodedText: string) => {
+ const procesarQR = async (decodedText: string) => {
+    console.log('QR leído:', decodedText);
     try {
       const qrData = JSON.parse(decodedText);
+      console.log('QR parseado:', qrData);
       const res = await qrApi.validar(qrData);
+      console.log('Respuesta backend:', res);
       setResultado({ ok: true, mensaje: res.message || 'Entrada validada exitosamente' });
     } catch (err: any) {
-      setResultado({ ok: false, mensaje: err.message || 'Código QR inválido' });
+      console.error('Error completo:', err);
+      setResultado({ ok: false, mensaje: `${err.name}: ${err.message}` });
     }
   };
-
   useEffect(() => {
     return () => {
       detenerEscaneo();
