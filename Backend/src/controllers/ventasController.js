@@ -41,6 +41,30 @@ const comprarEntradas = async (req, res) => {
 
         await liberarReservasVencidas(conn);
 
+        const [compradas] = await conn.query(`
+            SELECT COUNT(*) AS total_entradas
+            FROM entrada e
+            JOIN venta v ON e.id_venta = v.id_venta
+            JOIN (
+                SELECT id_venta, MAX(fechahora) AS ultima_fecha
+                FROM venta_estado
+                GROUP BY id_venta
+            ) ult ON v.id_venta = ult.id_venta
+            JOIN venta_estado ve 
+                ON ve.id_venta = ult.id_venta
+                AND ve.fechahora = ult.ultima_fecha
+            WHERE v.id_comprador = ?
+            AND e.id_evento = ?
+            AND ve.id_estado IN (1, 2)
+        `, [id_usuario, id_evento]);
+
+        if (compradas[0].total_entradas + cantidad_entradas > 5) {
+            await conn.rollback();
+            return res.status(400).json({
+                error: `Ya compraste ${compradas[0].total_entradas} entradas para este evento. El máximo es 5.`
+            });
+        }
+
         const [evento] = await conn.query(`
             SELECT id_evento, id_estadio
             FROM eventos
