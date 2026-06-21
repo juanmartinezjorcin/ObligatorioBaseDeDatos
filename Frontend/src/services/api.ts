@@ -1,7 +1,5 @@
 import { auth } from '../../firebase';
-const BASE_URL = 'http://localhost:3000/api';
-
-//funcion para agregar token a cada request
+const BASE_URL = '/api';//funcion para agregar token a cada request
 
 const request = async (endpoint: string, options: RequestInit = {}) => {
     const user = auth.currentUser;
@@ -16,10 +14,9 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         headers, 
     });
     
-    if (!res.ok) {
-        const error = await res.json();
-        throw new Error(error.message || 'Error en la solicitud');
-
+   if (!res.ok) {
+     const error = await res.json();
+     throw new Error(error.error || error.message || 'Error en la solicitud');
     }
 
     return res.json();
@@ -88,4 +85,21 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         body: JSON.stringify({ id_transferencia }),
         }),
         listar: () => request('/transferencias/listar'),
+    };
+
+    //endpoint dispositivos
+    export const dispositivosApi = {
+        asociar: (id_dispositivo: number) => request('/dispositivos/asociar', {
+        method: 'POST',
+        body: JSON.stringify({ id_dispositivo }),
+        }),
+    };
+
+    //endpoint entradas - QR y validación
+    export const qrApi = {
+        generar: (id_entrada: number) => request(`/entradas/qr?id_entrada=${id_entrada}`),
+        validar: (qrData: object) => request('/entradas/validar', {
+        method: 'POST',
+        body: JSON.stringify({ qrData }),
+        }),
     };

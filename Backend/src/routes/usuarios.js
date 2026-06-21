@@ -11,6 +11,4 @@ router.post('/registro_admin', registrarAdmin);
 
 router.post('/registro_funcionario', registrarFuncionario);
 
-router.get('/', (req, res) => res.json({ message: 'ruta usuarios ok' }));
-
 module.exports = router;

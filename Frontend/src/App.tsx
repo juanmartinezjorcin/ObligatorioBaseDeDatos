@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import AdminRoute from './components/AdminRoute';
@@ -12,12 +12,17 @@ import Transfers from './pages/Transfers';
 import AdminHome from './pages/AdminHome';
 import CreateEvent from './pages/CreateEvent';
 import BuyTickets from './pages/BuyTickets';
+import MyTicketQR from './pages/MyTicketQR';
+import FuncionarioRoute from './components/FuncionarioRoute';
+import FuncionarioHome from './pages/FuncionarioHome';
+import ScanTicket from './pages/ScanTicket';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<Navigate to="/login" />} />
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
           <Route path="/home" element={
@@ -59,6 +64,21 @@ function App() {
          <ProtectedRoute>
            <BuyTickets />
          </ProtectedRoute>
+          } />
+          <Route path="/mis-entradas/:id/qr" element={
+          <ProtectedRoute>
+             <MyTicketQR />
+          </ProtectedRoute>
+          } />
+          <Route path="/funcionario" element={
+          <FuncionarioRoute>
+           <FuncionarioHome />
+         </FuncionarioRoute>  
+          } />
+          <Route path="/funcionario/escanear" element={
+          <FuncionarioRoute>
+            <ScanTicket />
+          </FuncionarioRoute>
           } />
         </Routes>
       </BrowserRouter>
