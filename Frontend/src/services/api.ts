@@ -1,5 +1,5 @@
 import { auth } from '../../firebase';
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'http://192.168.1.54:3000/api';
 
 //funcion para agregar token a cada request
 
@@ -88,4 +88,21 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         body: JSON.stringify({ id_transferencia }),
         }),
         listar: () => request('/transferencias/listar'),
+    };
+
+    //endpoint dispositivos
+    export const dispositivosApi = {
+        asociar: (id_dispositivo: number) => request('/dispositivos/asociar', {
+        method: 'POST',
+        body: JSON.stringify({ id_dispositivo }),
+        }),
+    };
+
+    //endpoint entradas - QR y validación
+    export const qrApi = {
+        generar: (id_entrada: number) => request(`/entradas/qr?id_entrada=${id_entrada}`),
+        validar: (qrData: object) => request('/entradas/validar', {
+        method: 'POST',
+        body: JSON.stringify({ qrData }),
+        }),
     };

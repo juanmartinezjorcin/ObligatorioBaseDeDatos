@@ -80,6 +80,7 @@ const MisEntradas = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
+              gap: '12px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{
@@ -103,16 +104,26 @@ const MisEntradas = () => {
                   </p>
                 </div>
               </div>
-              <span style={{
-                fontSize: '12px',
-                fontWeight: 500,
-                padding: '4px 10px',
-                borderRadius: 'var(--border-radius-md)',
-                background: entrada.validez ? 'var(--color-background-success)' : 'var(--color-background-secondary)',
-                color: entrada.validez ? 'var(--color-text-success)' : 'var(--color-text-secondary)',
-              }}>
-                {entrada.validez ? 'Válida' : 'Consumida'}
-              </span>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {entrada.validez ? (
+                  <button onClick={() => navigate(`/mis-entradas/${entrada.id_entrada}/qr`)} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <i className="ti ti-qrcode" style={{ fontSize: '14px' }} aria-hidden="true" />
+                    Ver QR
+                  </button>
+                ) : null}
+                <span style={{
+                  fontSize: '12px',
+                  fontWeight: 500,
+                  padding: '4px 10px',
+                  borderRadius: 'var(--border-radius-md)',
+                  background: entrada.validez ? 'var(--color-background-success)' : 'var(--color-background-secondary)',
+                  color: entrada.validez ? 'var(--color-text-success)' : 'var(--color-text-secondary)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {entrada.validez ? 'Válida' : 'Consumida'}
+                </span>
+              </div>
             </div>
           ))}
         </div>
