@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { useNavigate } from 'react-router-dom';
 import { auth } from '../../firebase';
-import { usuariosApi } from '../services/api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -16,9 +15,17 @@ const Login = () => {
     setError('');
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      await usuariosApi.perfil();
-      navigate('/home');
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const tokenResult = await cred.user.getIdTokenResult();
+      const role = tokenResult.claims.role as string;
+
+      if (role === 'administrador') {
+        navigate('/admin');
+      } else if (role === 'funcionario') {
+        navigate('/funcionario');
+      } else {
+        navigate('/home');
+      }
     } catch (err: any) {
       setError('Email o contraseña incorrectos');
     } finally {
