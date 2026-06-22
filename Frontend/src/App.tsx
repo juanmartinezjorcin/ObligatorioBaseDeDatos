@@ -16,6 +16,7 @@ import MyTicketQR from './pages/MyTicketQR';
 import FuncionarioRoute from './components/FuncionarioRoute';
 import FuncionarioHome from './pages/FuncionarioHome';
 import ScanTicket from './pages/ScanTicket';
+import Auditoria from './pages/Auditoria';
 
 function App() {
   return (
@@ -80,6 +81,11 @@ function App() {
             <ScanTicket />
           </FuncionarioRoute>
           } />
+          <Route path="/admin/auditoria" element={
+          <AdminRoute>
+            <Auditoria />
+          </AdminRoute>
+         } />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
