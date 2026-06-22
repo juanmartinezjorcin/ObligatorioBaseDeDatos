@@ -220,7 +220,7 @@ const validarQR = async (req, res) => {
             });
         }
 
-        if (timestamp < Date.now() - 40 * 1000) {
+        if (timestamp < Date.now() - 120 * 1000) {
             await conn.rollback();
             return res.status(400).json({
                 error: 'QR expirado'
@@ -229,14 +229,13 @@ const validarQR = async (req, res) => {
 
         await conn.query(`
             UPDATE entrada
-            SET validez = FALSE
+            SET 
+                validez = FALSE,
+                id_funcionario = ?,
+                id_dispositivo = ?,
+                QRvalidado = ?
             WHERE id_entrada = ?
-        `, [id_entrada]);
-
-        await conn.query(`
-            INSERT INTO valida (id_entrada, id_funcionario, id_dispositivo)
-            VALUES (?, ?, ?)
-        `, [id_entrada, id_funcionario, dispositivo[0].id_dispositivo]);
+        `, [ id_funcionario, dispositivo[0].id_dispositivo, JSON.stringify(qrData), id_entrada ]);
 
         await conn.commit();
 
