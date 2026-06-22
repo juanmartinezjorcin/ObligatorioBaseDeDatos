@@ -4,6 +4,7 @@ const BASE_URL = '/api';//funcion para agregar token a cada request
 const request = async (endpoint: string, options: RequestInit = {}) => {
     const user = auth.currentUser;
     const token = user ? await user.getIdToken() : null;
+    console.log("AUTH USER:", auth.currentUser?.uid);
 
     const headers = {
         'Content-Type': 'application/json',
@@ -103,3 +104,8 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         body: JSON.stringify({ qrData }),
         }),
     };
+
+    export const auditoriaApi = {
+    listar: () => request('/auditoria/listar'),
+    filtrar: (resultado: string) => request(`/auditoria/filtrar?resultado=${resultado}`)
+};

@@ -85,6 +85,36 @@ const AdminHome = () => {
               Listado de partidos programados
             </p>
           </div>
+
+          {/* NUEVA CARD - AUDITORÍA */}
+          <div
+            onClick={() => navigate('/admin/auditoria')}
+            style={{
+              background: 'var(--color-background-primary)',
+              border: '0.5px solid var(--color-border-tertiary)',
+              borderRadius: 'var(--border-radius-lg)',
+              padding: '1.25rem',
+              cursor: 'pointer',
+            }}
+          >
+            <i
+              className="ti ti-list-search"
+              style={{
+                fontSize: '22px',
+                color: 'var(--color-text-info)',
+                display: 'block',
+                marginBottom: '10px'
+              }}
+              aria-hidden="true"
+            />
+            <p style={{ fontWeight: 500, margin: '0 0 4px', fontSize: '15px' }}>
+              Auditoría
+            </p>
+            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: 0 }}>
+              Ver validaciones de entradas QR
+            </p>
+          </div>
+
         </div>
       </div>
     </div>
