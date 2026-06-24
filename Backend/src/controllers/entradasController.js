@@ -141,13 +141,6 @@ const validarQR = async (req, res) => {
             return res.status(400).json({ error: 'QR incompleto' });
         }
 
-        const firmaEsperada = generarFirmaQR(String(id_entrada), uid, timestamp);
-
-        if (firma !== firmaEsperada) {
-            auditoria.resultado_validacion = 'FIRMA_INVALIDA';
-            return res.status(403).json({ error: 'QR con firma inválida' });
-        }
-
         if (timestamp < Date.now() - 30 * 1000) {
             auditoria.resultado_validacion = 'QR_EXPIRADO';
             return res.status(400).json({ error: 'QR expirado' });
@@ -197,6 +190,14 @@ const validarQR = async (req, res) => {
             entrada[0].id_estadio,
             entrada[0].nombre_sector
         ]);
+
+        const firmaEsperada = generarFirmaQR(String(id_entrada), uid, timestamp);
+
+        if (firma !== firmaEsperada) {
+            auditoria.resultado_validacion = 'FIRMA_INVALIDA';
+            await conn.rollback();
+            return res.status(403).json({ error: 'QR con firma inválida' });
+        }
 
         if (!lugar.length) {
             auditoria.resultado_validacion = 'SIN_ASIGNACION';
