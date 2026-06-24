@@ -191,14 +191,6 @@ const validarQR = async (req, res) => {
             entrada[0].nombre_sector
         ]);
 
-        const firmaEsperada = generarFirmaQR(String(id_entrada), uid, timestamp);
-
-        if (firma !== firmaEsperada) {
-            auditoria.resultado_validacion = 'FIRMA_INVALIDA';
-            await conn.rollback();
-            return res.status(403).json({ error: 'QR con firma inválida' });
-        }
-
         if (!lugar.length) {
             auditoria.resultado_validacion = 'SIN_ASIGNACION';
             await conn.rollback();
@@ -223,6 +215,14 @@ const validarQR = async (req, res) => {
             auditoria.resultado_validacion = 'QR_INVALIDO';
             await conn.rollback();
             return res.status(403).json({ error: 'QR inválido' });
+        }
+
+        const firmaEsperada = generarFirmaQR(String(id_entrada), uid, timestamp);
+
+        if (firma !== firmaEsperada) {
+            auditoria.resultado_validacion = 'FIRMA_INVALIDA';
+            await conn.rollback();
+            return res.status(403).json({ error: 'QR con firma inválida' });
         }
 
         if (!entrada[0].validez) {
