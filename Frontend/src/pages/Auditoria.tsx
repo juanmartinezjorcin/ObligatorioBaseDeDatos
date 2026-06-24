@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { auditoriaApi, eventosApi } from '../services/api';
+import { useNavigate } from 'react-router-dom';
+
 
 interface AuditoriaItem {
   id_auditoria: number;
@@ -35,6 +37,8 @@ const Auditoria = () => {
   const [eventos, setEventos] = useState<any[]>([]);
   const [eventoFiltro, setEventoFiltro] = useState<string>('');
   const [resultadoFiltro, setResultadoFiltro] = useState<string>('');
+  const navigate = useNavigate();
+
 
   useEffect(() => {
     const load = async () => {
@@ -61,7 +65,7 @@ const Auditoria = () => {
     ? datosFiltradosPorEvento.filter(d => d.resultado_validacion === resultadoFiltro)
     : datosFiltradosPorEvento;
 
-  // Pie chart — exitosos vs fallidos
+  // Pie chart 
   const exitosos = datosFiltradosPorEvento.filter(d => d.resultado_validacion === EXITOSO).length;
   const fallidos = datosFiltradosPorEvento.filter(d => d.resultado_validacion !== EXITOSO).length;
   const pieData = [
@@ -69,7 +73,7 @@ const Auditoria = () => {
     { name: 'Fallidos', value: fallidos },
   ];
 
-  // Bar chart — distribución de tipos de fallo
+  // Bar chart 
   const conteoResultados: Record<string, number> = {};
   datosFiltradosPorEvento.forEach(d => {
     conteoResultados[d.resultado_validacion] = (conteoResultados[d.resultado_validacion] || 0) + 1;
@@ -86,39 +90,66 @@ const Auditoria = () => {
     }}>
       <div style={{ maxWidth: '900px', margin: '0 auto' }}>
 
-        {/* HEADER */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2rem' }}>
-          <div style={{
-            width: '44px', height: '44px', borderRadius: '50%',
-            background: 'var(--color-background-info)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <i className="ti ti-list-search" style={{ fontSize: '20px', color: 'var(--color-text-info)' }} />
-          </div>
-          <div>
-            <h1 style={{ fontSize: '18px', fontWeight: 500, margin: 0 }}>Auditoría del sistema</h1>
-            <p style={{ fontSize: '13px', color: 'var(--color-text-secondary)', margin: 0 }}>Validaciones de entradas QR</p>
-          </div>
-        </div>
+      {/* HEADER */}
+<div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '2rem' }}>
+  <button
+    onClick={() => navigate('/admin')}
+    style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+  >
+    <i className="ti ti-arrow-left" style={{ fontSize: '16px' }} aria-hidden="true" />
+    Volver
+  </button>
 
-        {/* FILTRO POR EVENTO */}
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label style={{ fontSize: '13px', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '6px' }}>
-            Filtrar por evento
-          </label>
-          <select
-            value={eventoFiltro}
-            onChange={e => setEventoFiltro(e.target.value)}
-            style={{ minWidth: '280px' }}
-          >
-            <option value="">Todos los eventos</option>
-            {eventos.map(ev => (
-              <option key={ev.id_evento} value={String(ev.id_evento)}>
-                {ev.equipos} — {new Date(ev.fecha_y_hora).toLocaleDateString()}
-              </option>
-            ))}
-          </select>
-        </div>
+  <div
+    style={{
+      width: '44px',
+      height: '44px',
+      borderRadius: '50%',
+      background: 'var(--color-background-info)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    }}
+  >
+    <i
+      className="ti ti-list-search"
+      style={{ fontSize: '20px', color: 'var(--color-text-info)' }}
+    />
+  </div>
+
+  <div>
+    <h1 style={{ fontSize: '18px', fontWeight: 500, margin: 0 }}>
+      Auditoría del sistema
+    </h1>
+    <p
+      style={{
+        fontSize: '13px',
+        color: 'var(--color-text-secondary)',
+        margin: 0,
+      }}
+    >
+      Validaciones de entradas QR
+    </p>
+  </div>
+</div>
+{/* FILTRO POR EVENTO */}
+<div style={{ marginBottom: '1.5rem' }}>
+  <label style={{ fontSize: '13px', color: 'var(--color-text-secondary)', display: 'block', marginBottom: '6px' }}>
+    Filtrar por evento
+  </label>
+  <select
+    value={eventoFiltro}
+    onChange={e => setEventoFiltro(e.target.value)}
+    style={{ minWidth: '280px' }}
+  >
+    <option value="">Todos los eventos</option>
+    {eventos.map(ev => (
+      <option key={ev.id_evento} value={String(ev.id_evento)}>
+        {ev.equipos} — {new Date(ev.fecha_y_hora).toLocaleDateString()}
+      </option>
+    ))}
+  </select>
+</div>
 
         {/* GRAFICAS */}
         <div style={{
