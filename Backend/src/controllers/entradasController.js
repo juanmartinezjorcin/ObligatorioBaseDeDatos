@@ -1,6 +1,9 @@
 const pool = require('../config/db');
 const { getAuth } = require('firebase-admin/auth');
 const QRCode = require("qrcode");
+const crypto = require("crypto");
+
+const QR_SECRET = process.env.QR_SECRET;
 
 const traerEntradas = async (req, res) => {
     const authHeader = req.headers.authorization;
@@ -8,9 +11,8 @@ const traerEntradas = async (req, res) => {
         return res.status(401).json({ error: 'Token requerido' });
     }
 
-    const token = authHeader.split(' ')[1];
-
     try {
+        const token = authHeader.split(' ')[1];
         const decodedToken = await getAuth().verifyIdToken(token);
         const id_usuario = decodedToken.uid;
 
@@ -20,11 +22,10 @@ const traerEntradas = async (req, res) => {
             WHERE id_dueño = ?
         `, [id_usuario]);
 
-        res.json(entradas);
-
+        return res.json(entradas);
     } catch (error) {
         console.error('Error al traer entradas:', error);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        return res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
 
@@ -34,40 +35,23 @@ const traerEntradasValidas = async (req, res) => {
         return res.status(401).json({ error: 'Token requerido' });
     }
 
-    const token = authHeader.split(' ')[1];
-
     try {
+        const token = authHeader.split(' ')[1];
         const decodedToken = await getAuth().verifyIdToken(token);
         const id_usuario = decodedToken.uid;
 
         const [entradas] = await pool.query(`
-            SELECT *
-            FROM entrada
-            WHERE id_dueño = ?
+            SELECT e.*
+            FROM entrada e
+            JOIN eventos ev ON e.id_evento = ev.id_evento
+            WHERE e.id_dueño = ?
+            AND ev.fecha_y_hora > NOW()
         `, [id_usuario]);
 
-        const entradasValidas = [];
-
-        for (const entrada of entradas) {
-            const [data] = await pool.query(`
-                SELECT fecha_y_hora
-                FROM eventos
-                WHERE id_evento = ?
-            `, [entrada.id_evento]);
-
-            if (data.length > 0) {
-                const fechaEvento = new Date(data[0].fecha_y_hora);
-                if (fechaEvento > new Date()) {
-                    entradasValidas.push(entrada);
-                }
-            }
-        }
-
-        res.json(entradasValidas);
-
+        return res.json(entradas);
     } catch (error) {
-        console.error('Error al traer entradas:', error);
-        res.status(500).json({ error: 'Error interno del servidor' });
+        console.error('Error al traer entradas válidas:', error);
+        return res.status(500).json({ error: 'Error interno del servidor' });
     }
 };
 
@@ -83,9 +67,8 @@ const generarQR = async (req, res) => {
         return res.status(401).json({ error: 'Token requerido' });
     }
 
-    const token = authHeader.split(' ')[1];
-
     try {
+        const token = authHeader.split(' ')[1];
         const decodedToken = await getAuth().verifyIdToken(token);
         const id_usuario = decodedToken.uid;
 
@@ -103,13 +86,16 @@ const generarQR = async (req, res) => {
             return res.status(403).json({ error: 'No autorizado para esta entrada' });
         }
 
-        const qrData = JSON.stringify({
-            id_entrada,
-            uid: id_usuario,
-            timestamp: Date.now()
-        });
+        const timestamp = Date.now();
 
-        const qrCode = await QRCode.toDataURL(qrData);
+        const qrData = {
+            id_entrada: String(id_entrada),
+            uid: id_usuario,
+            timestamp,
+            firma: generarFirmaQR(String(id_entrada), id_usuario, timestamp)
+        };
+
+        const qrCode = await QRCode.toDataURL(JSON.stringify(qrData));
 
         return res.json({
             id_entrada: entrada[0].id_entrada,
@@ -137,10 +123,10 @@ const validarQR = async (req, res) => {
     let conn;
 
     let auditoria = {
-        id_entrada: null,
+        id_entrada: qrData.id_entrada || null,
         id_funcionario: null,
         id_dispositivo: null,
-        codigo_qr_validado: null,
+        codigo_qr_validado: JSON.stringify(qrData),
         id_evento: null,
         id_estadio: null,
         nombre_sector: null,
@@ -148,6 +134,25 @@ const validarQR = async (req, res) => {
     };
 
     try {
+        const { id_entrada, uid, timestamp, firma } = qrData;
+
+        if (!id_entrada || !uid || !timestamp || !firma) {
+            auditoria.resultado_validacion = 'QR_INCOMPLETO';
+            return res.status(400).json({ error: 'QR incompleto' });
+        }
+
+        const firmaEsperada = generarFirmaQR(String(id_entrada), uid, timestamp);
+
+        if (firma !== firmaEsperada) {
+            auditoria.resultado_validacion = 'FIRMA_INVALIDA';
+            return res.status(403).json({ error: 'QR con firma inválida' });
+        }
+
+        if (timestamp < Date.now() - 30 * 1000) {
+            auditoria.resultado_validacion = 'QR_EXPIRADO';
+            return res.status(400).json({ error: 'QR expirado' });
+        }
+
         conn = await pool.getConnection();
         await conn.beginTransaction();
 
@@ -161,14 +166,12 @@ const validarQR = async (req, res) => {
         }
 
         const id_funcionario = decodedToken.uid;
-        const { id_entrada, uid, timestamp } = qrData;
-
-        auditoria.id_entrada = id_entrada;
         auditoria.id_funcionario = id_funcionario;
-        auditoria.codigo_qr_validado = JSON.stringify(qrData);
 
         const [entrada] = await conn.query(`
-            SELECT * FROM entrada WHERE id_entrada = ?
+            SELECT *
+            FROM entrada
+            WHERE id_entrada = ?
         `, [id_entrada]);
 
         if (!entrada.length) {
@@ -186,20 +189,25 @@ const validarQR = async (req, res) => {
             FROM asignado
             WHERE id_funcionario = ?
             AND id_evento = ?
+            AND id_estadio = ?
+            AND nombre_sector = ?
         `, [
             id_funcionario,
-            entrada[0].id_evento
+            entrada[0].id_evento,
+            entrada[0].id_estadio,
+            entrada[0].nombre_sector
         ]);
 
-        if (lugar.length === 0) {
+        if (!lugar.length) {
             auditoria.resultado_validacion = 'SIN_ASIGNACION';
             await conn.rollback();
-            return res.status(403).json({ error: 'Funcionario no asignado' });
+            return res.status(403).json({ error: 'Funcionario no asignado a este evento/sector' });
         }
 
-        // dispositivo
         const [dispositivo] = await conn.query(`
-            SELECT * FROM dispositivo WHERE id_funcionario = ?
+            SELECT *
+            FROM dispositivo
+            WHERE id_funcionario = ?
         `, [id_funcionario]);
 
         if (!dispositivo.length) {
@@ -210,9 +218,6 @@ const validarQR = async (req, res) => {
 
         auditoria.id_dispositivo = dispositivo[0].id_dispositivo;
 
-
-
-        // validaciones QR
         if (entrada[0].id_dueño !== uid) {
             auditoria.resultado_validacion = 'QR_INVALIDO';
             await conn.rollback();
@@ -225,19 +230,18 @@ const validarQR = async (req, res) => {
             return res.status(400).json({ error: 'Entrada no válida' });
         }
 
-        if (timestamp < Date.now() - 40 * 1000) {
-            auditoria.resultado_validacion = 'QR_EXPIRADO';
-            await conn.rollback();
-            return res.status(400).json({ error: 'QR expirado' });
-        }
-
-        await conn.query(`
+        const [update] = await conn.query(`
             UPDATE entrada
-            SET validez = FALSE,
+            SET validez = FALSE
             WHERE id_entrada = ?
-        `, [
-            id_entrada
-        ]);
+            AND validez = TRUE
+        `, [id_entrada]);
+
+        if (update.affectedRows === 0) {
+            auditoria.resultado_validacion = 'YA_USADA';
+            await conn.rollback();
+            return res.status(400).json({ error: 'Entrada ya utilizada' });
+        }
 
         auditoria.resultado_validacion = 'EXITOSO';
 
@@ -282,6 +286,13 @@ const validarQR = async (req, res) => {
             console.error('Error al insertar auditoría:', err);
         }
     }
+};
+
+const generarFirmaQR = (id_entrada, uid, timestamp) => {
+    return crypto
+        .createHmac("sha256", QR_SECRET)
+        .update(`${id_entrada}:${uid}:${timestamp}`)
+        .digest("hex");
 };
 
 module.exports = {

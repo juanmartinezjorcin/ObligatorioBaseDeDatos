@@ -66,7 +66,7 @@ const MyTicketQR = () => {
             <>
               <img src={qrCode} alt="QR de la entrada" style={{ width: '100%', maxWidth: '280px', margin: '0 auto' }} />
               <p style={{ fontSize: '12px', color: 'var(--color-text-secondary)', marginTop: '12px' }}>
-                Este código expira a los 40 segundos. Generá uno nuevo si pasa el tiempo.
+                Este código expira a los 30 segundos. Generá uno nuevo si pasa el tiempo.
               </p>
               <button onClick={cargarQR} style={{ marginTop: '8px' }}>
                 Regenerar código
