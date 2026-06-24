@@ -41,21 +41,21 @@ const Registro = () => {
     <div>
       <h2>Registro</h2>
       <form onSubmit={handleRegistro}>
-        <input name="mail" type="email" placeholder="Email" onChange={handleChange} />
-        <input name="password" type="password" placeholder="Contraseña" onChange={handleChange} />
-        <select name="tipo_documento" onChange={handleChange}>
+        <input name="mail" type="email" placeholder="Email" value={form.mail} onChange={handleChange} />
+        <input name="password" type="password" placeholder="Contraseña" value={form.password} onChange={handleChange} />
+        <select name="tipo_documento" value={form.tipo_documento} onChange={handleChange}>
           <option value="CI">CI</option>
           <option value="PASAPORTE">Pasaporte</option>
           <option value="DNI">DNI</option>
         </select>
-        <input name="numero_documento" placeholder="Número de documento" onChange={handleChange} />
-        <input name="pais_documento" placeholder="País del documento" onChange={handleChange} />
-        <input name="direccion_pais" placeholder="País" onChange={handleChange} />
-        <input name="direccion_localidad" placeholder="Localidad" onChange={handleChange} />
-        <input name="direccion_calle" placeholder="Calle" onChange={handleChange} />
-        <input name="direccion_numero" placeholder="Número" onChange={handleChange} />
-        <input name="direccion_codigo_postal" placeholder="Código postal" onChange={handleChange} />
-        <input name="telefono" placeholder="Teléfono" onChange={handleChange} />
+        <input name="numero_documento" placeholder="Número de documento" value={form.numero_documento} onChange={handleChange} />
+        <input name="pais_documento" placeholder="País del documento" value={form.pais_documento} onChange={handleChange} />
+        <input name="direccion_pais" placeholder="País" value={form.direccion_pais} onChange={handleChange} />
+        <input name="direccion_localidad" placeholder="Localidad" value={form.direccion_localidad} onChange={handleChange} />
+        <input name="direccion_calle" placeholder="Calle" value={form.direccion_calle} onChange={handleChange} />
+        <input name="direccion_numero" placeholder="Número" value={form.direccion_numero} onChange={handleChange} />
+        <input name="direccion_codigo_postal" placeholder="Código postal" value={form.direccion_codigo_postal} onChange={handleChange} />
+        <input name="telefono" placeholder="Teléfono" value={form.telefono} onChange={handleChange} />
         <button type="submit">Registrarse</button>
         {error && <p>{error}</p>}
       </form>

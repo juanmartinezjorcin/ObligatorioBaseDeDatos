@@ -1,6 +1,29 @@
 const pool = require('../config/db');
 const { getAuth } = require('../config/firebase');
 
+
+// Validación de cédula uruguaya
+const validarCedulaUruguaya = (cedula) => {
+    const limpia = cedula.replace(/\D/g, '');
+
+    if (limpia.length < 7 || limpia.length > 8) return false;
+
+    const digitos = limpia.slice(0, -1).padStart(7, '0');
+    const digitoVerificador = parseInt(limpia.slice(-1));
+
+    const factores = [2, 9, 8, 7, 6, 3, 4];
+
+    const suma = digitos.split('').reduce((acc, d, i) => {
+        const producto = parseInt(d) * factores[i];
+        return acc + (producto % 10);
+    }, 0);
+
+    const esperado = suma % 10 === 0 ? 0 : 10 - (suma % 10);
+
+    return digitoVerificador === esperado;
+};
+
+
 const registrarUsuario = async (req, res) => {
     const {
         mail,
@@ -18,6 +41,12 @@ const registrarUsuario = async (req, res) => {
 
     if (!mail || !password || !tipo_documento || !numero_documento || !pais_documento) {
         return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    }
+
+    if (tipo_documento === 'CI' && pais_documento === 'Uruguay') {
+        if (!validarCedulaUruguaya(numero_documento)) {
+        return res.status(400).json({ error: 'El número de cédula de identidad uruguaya no es válido' });
+         }
     }
 
     const auth = getAuth();
