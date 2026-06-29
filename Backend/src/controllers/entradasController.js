@@ -46,6 +46,7 @@ const traerEntradasValidas = async (req, res) => {
             JOIN eventos ev ON e.id_evento = ev.id_evento
             WHERE e.id_dueño = ?
             AND ev.fecha_y_hora > NOW()
+            AND e.validez = TRUE
         `, [id_usuario]);
 
         return res.json(entradas);

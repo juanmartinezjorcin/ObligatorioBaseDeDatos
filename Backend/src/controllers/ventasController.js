@@ -272,7 +272,7 @@ const confirmarEntradas = async (req, res) => {
 
         if (estado[0].tipo !== 'pendiente') {
             await conn.rollback();
-            return res.status(404).json({ error: 'Esta venta ya fue rechasada o completada' });
+            return res.status(404).json({ error: 'Esta venta ya fue rechazada o completada' });
         }
 
         const [entradas] = await conn.query(`
